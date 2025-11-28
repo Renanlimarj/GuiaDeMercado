@@ -7,7 +7,7 @@ function Home() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1>Em construção</h1>
+      <h1>Em construção 🚧</h1>
 
       <img
         src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200"
