@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  priceEntries  PriceEntry[]
+  shoppingLists ShoppingList[]
+}
+
+model Supermarket {
+  id           String       @id @default(cuid())
+  name         String
+  address      String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  priceEntries PriceEntry[]
+}
+
+model Product {
+  id                String             @id @default(cuid())
+  name              String
+  barcode           String?            @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  priceEntries      PriceEntry[]
+  shoppingListItems ShoppingListItem[]
+}
+
+model PriceEntry {
+  id            String      @id @default(cuid())
+  price         Float
+  date          DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+  supermarket   Supermarket @relation(fields: [supermarketId], references: [id])
+  supermarketId String
+  product       Product     @relation(fields: [productId], references: [id])
+  productId     String
+}
+
+model ShoppingList {
+  id        String             @id @default(cuid())
+  name      String             @default("Minha Lista")
+  user      User               @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  items     ShoppingListItem[]
+}
+
+model ShoppingListItem {
+  id             String       @id @default(cuid())
+  shoppingList   ShoppingList @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+  shoppingListId String
+  product        Product      @relation(fields: [productId], references: [id])
+  productId      String
+  quantity       Int          @default(1)
+  checked        Boolean      @default(false)
+}
