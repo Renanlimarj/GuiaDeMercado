@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -24,6 +23,8 @@ model Supermarket {
   id           String       @id @default(cuid())
   name         String
   address      String?
+  latitude     Float?
+  longitude    Float?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   priceEntries PriceEntry[]
@@ -33,6 +34,8 @@ model Product {
   id                String             @id @default(cuid())
   name              String
   barcode           String?            @unique
+  image             String?
+  category          String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   priceEntries      PriceEntry[]

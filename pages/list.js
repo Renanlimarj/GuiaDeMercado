@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { ArrowLeft, Trash2, Check, Plus } from "lucide-react";
+import Layout from "../components/Layout";
 
 export default function ShoppingList() {
   const { data: session } = useSession();
@@ -13,7 +15,20 @@ export default function ShoppingList() {
   useEffect(() => {
     if (session) {
       fetchList();
-      fetch("/api/products").then((res) => res.json()).then(setProducts);
+      fetch("/api/products")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setProducts(data);
+          } else {
+            console.error("Invalid products data:", data);
+            setProducts([]);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch products:", err);
+          setProducts([]);
+        });
     }
   }, [session]);
 
@@ -54,52 +69,71 @@ export default function ShoppingList() {
   };
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "600px", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1rem" }}>Minha Lista de Compras</h1>
+    <Layout>
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <Link href="/" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <ArrowLeft size={16} /> Voltar
+          </Link>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Minha Lista de Compras</h1>
+        </div>
 
-      <form onSubmit={addItem} style={{ display: "flex", gap: "0.5rem", marginBottom: "2rem" }}>
-        <select
-          value={selectedProduct}
-          onChange={(e) => setSelectedProduct(e.target.value)}
-          style={{ flex: 1, padding: "0.5rem", border: "1px solid #ccc", borderRadius: "4px" }}
-        >
-          <option value="">Adicionar produto à lista...</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
-        <button type="submit" style={{ padding: "0.5rem 1rem", background: "#2563eb", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}>
-          Adicionar
-        </button>
-      </form>
+        <form onSubmit={addItem} className="flex gap-2 mb-4">
+          <select
+            value={selectedProduct}
+            onChange={(e) => setSelectedProduct(e.target.value)}
+            className="input"
+            style={{ flex: 1 }}
+          >
+            <option value="">Adicionar produto à lista...</option>
+            {Array.isArray(products) && products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <button type="submit" className="btn btn-primary">
+            <Plus size={20} />
+          </button>
+        </form>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        {list?.items.map((item) => (
-          <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem", background: "#f9fafb", borderRadius: "4px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <input
-                type="checkbox"
-                checked={item.checked}
-                onChange={(e) => toggleCheck(item.id, e.target.checked)}
-                style={{ width: "1.25rem", height: "1.25rem" }}
-              />
-              <span style={{ textDecoration: item.checked ? "line-through" : "none", color: item.checked ? "#9ca3af" : "inherit" }}>
-                {item.product.name}
-              </span>
+        <div className="flex flex-col gap-2">
+          {list?.items && Array.isArray(list.items) && list.items.map((item) => (
+            <div key={item.id} className="card flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div 
+                  onClick={() => toggleCheck(item.id, !item.checked)}
+                  style={{ 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    border: item.checked ? "none" : "2px solid #334155",
+                    backgroundColor: item.checked ? "#22c55e" : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {item.checked && <Check size={14} color="white" />}
+                </div>
+                <span style={{ 
+                  textDecoration: item.checked ? "line-through" : "none", 
+                  color: item.checked ? "#94a3b8" : "inherit",
+                  fontSize: "1.1rem"
+                }}>
+                  {item.product.name}
+                </span>
+              </div>
+              <button onClick={() => deleteItem(item.id)} className="btn btn-secondary" style={{ padding: "0.5rem", color: "#ef4444", borderColor: "#ef4444" }}>
+                <Trash2 size={16} />
+              </button>
             </div>
-            <button onClick={() => deleteItem(item.id)} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}>
-              Remover
-            </button>
-          </div>
-        ))}
-        {list?.items.length === 0 && (
-          <p style={{ textAlign: "center", color: "#6b7280" }}>Sua lista está vazia.</p>
-        )}
+          ))}
+          {list?.items.length === 0 && (
+            <p className="text-center text-muted py-8">Sua lista está vazia.</p>
+          )}
+        </div>
       </div>
-      
-      <div style={{ marginTop: "2rem", textAlign: "center" }}>
-        <Link href="/" style={{ color: "#2563eb" }}>Voltar para Home</Link>
-      </div>
-    </div>
+    </Layout>
   );
 }

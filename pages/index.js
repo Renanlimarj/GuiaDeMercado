@@ -1,122 +1,201 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
-import { Plus, Search, List, LogOut, ShoppingCart } from "lucide-react";
+import { Plus, Search, ShoppingCart, MapPin, Loader2 } from "lucide-react";
+import Layout from "../components/Layout";
+import SupermarketCard from "../components/SupermarketCard";
+import { useSupermarket } from "../context/SupermarketContext";
+import { useGeolocation, calculateDistance } from "../hooks/useGeolocation";
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const { selectedSupermarket, setSupermarket } = useSupermarket();
+  const { location, loading: geoLoading } = useGeolocation();
+  
   const [recentPrices, setRecentPrices] = useState([]);
+  const [supermarkets, setSupermarkets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/prices").then((res) => res.json()).then(setRecentPrices);
-  }, []);
+    if (session) {
+      fetchData();
+    }
+  }, [session]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [pricesRes, supermarketsRes] = await Promise.all([
+        fetch("/api/prices"),
+        fetch("/api/supermarkets")
+      ]);
+      
+      const pricesData = await pricesRes.json();
+      const supermarketsData = await supermarketsRes.json();
+
+      if (Array.isArray(pricesData)) setRecentPrices(pricesData);
+      if (Array.isArray(supermarketsData)) setSupermarkets(supermarketsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSortedSupermarkets = () => {
+    if (!location) return supermarkets;
+    
+    return [...supermarkets].sort((a, b) => {
+      const distA = calculateDistance(location.latitude, location.longitude, a.latitude, a.longitude);
+      const distB = calculateDistance(location.latitude, location.longitude, b.latitude, b.longitude);
+      return distA - distB;
+    });
+  };
+
+  if (status === "loading") {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+        <Loader2 className="animate-spin" size={32} />
+      </div>
+    );
+  }
 
   if (!session) {
     return (
       <div style={{ 
-        minHeight: "100vh", 
-        display: "flex", 
-        flexDirection: "column", 
-        alignItems: "center", 
-        justifyContent: "center", 
-        background: "linear-gradient(to bottom right, #0f172a, #1e293b)",
-        color: "white",
-        padding: "2rem",
-        textAlign: "center"
+        minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+        background: '#0f172a', color: 'white', padding: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden'
       }}>
-        <h1 style={{ fontSize: "3rem", fontWeight: "800", marginBottom: "1rem", background: "linear-gradient(to right, #3b82f6, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          GuiaDeMercado
-        </h1>
-        <p style={{ fontSize: "1.25rem", color: "#94a3b8", marginBottom: "2rem", maxWidth: "500px" }}>
-          Compare preços, colabore com a comunidade e economize nas suas compras de supermercado.
-        </p>
-        <div className="flex gap-2">
-          <button onClick={() => signIn()} className="btn btn-primary" style={{ fontSize: "1.125rem", padding: "0.75rem 2rem" }}>
-            Entrar
-          </button>
-          <Link href="/auth/signup" className="btn btn-secondary" style={{ fontSize: "1.125rem", padding: "0.75rem 2rem" }}>
-            Criar Conta
-          </Link>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.1))' }}></div>
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: '42rem' }}>
+          <h1 style={{ 
+            fontSize: '3rem', fontWeight: 800, marginBottom: '1.5rem', 
+            background: 'linear-gradient(to right, #60a5fa, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' 
+          }}>
+            Guia de Supermercados
+          </h1>
+          <p style={{ fontSize: '1.25rem', color: '#94a3b8', marginBottom: '2rem' }}>
+            Compare preços, encontre as melhores ofertas e economize nas suas compras de supermercado com a ajuda da comunidade.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => signIn()} className="btn btn-primary" style={{ fontSize: '1.125rem', padding: '0.75rem 2rem' }}>
+              Entrar Agora
+            </button>
+            <Link href="/auth/signup" className="btn btn-secondary" style={{ fontSize: '1.125rem', padding: '0.75rem 2rem' }}>
+              Criar Conta
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="container">
-      <div className="nav">
-        <div className="nav-logo">GuiaDeMercado</div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted hidden md:block">Olá, {session.user.name}</span>
-          <button onClick={() => signOut()} className="btn btn-secondary" style={{ padding: "0.5rem" }}>
-            <LogOut size={16} />
-          </button>
+  // Supermarket Selection Screen
+  if (!selectedSupermarket) {
+    const sortedSupermarkets = getSortedSupermarkets();
+
+    return (
+      <Layout>
+        <div style={{ maxWidth: '42rem', margin: '0 auto', padding: '2rem 0' }}>
+          <div className="text-center mb-4">
+            <div style={{ 
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', 
+              padding: '0.75rem', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.1)', 
+              color: '#60a5fa', marginBottom: '1rem' 
+            }}>
+              <MapPin size={32} />
+            </div>
+            <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '0.5rem' }}>Onde você está?</h1>
+            <p style={{ color: '#94a3b8' }}>Selecione o supermercado para ver ofertas e registrar preços.</p>
+          </div>
+
+          {geoLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <Loader2 className="animate-spin" style={{ display: 'inline-block', marginRight: '0.5rem' }} />
+              Obtendo localização...
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {sortedSupermarkets.map((supermarket) => (
+                <SupermarketCard 
+                  key={supermarket.id} 
+                  supermarket={supermarket}
+                  distance={location ? calculateDistance(location.latitude, location.longitude, supermarket.latitude, supermarket.longitude) : undefined}
+                  onSelect={setSupermarket}
+                />
+              ))}
+              
+              {sortedSupermarkets.length === 0 && (
+                <div style={{ 
+                  textAlign: 'center', padding: '2rem', color: '#64748b', 
+                  background: 'rgba(30, 41, 59, 0.5)', borderRadius: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.05)' 
+                }}>
+                  Nenhum supermercado encontrado.
+                  <br />
+                  <Link href="/supermarkets/new" style={{ color: '#60a5fa', textDecoration: 'none', marginTop: '0.5rem', display: 'inline-block' }}>
+                    Cadastrar novo supermercado
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+      </Layout>
+    );
+  }
+
+  // Dashboard Screen
+  return (
+    <Layout>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Painel Principal</h1>
+        <p style={{ color: '#94a3b8' }}>Bem-vindo de volta, {session.user.name}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
-        <Link href="/prices/new" className="card flex flex-col items-center justify-center p-6 hover:border-primary transition-colors group">
-          <div className="mb-2 p-3 rounded-full bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ marginBottom: '2rem' }}>
+        <Link href="/prices/new" className="glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', cursor: 'pointer', textDecoration: 'none' }}>
+          <div style={{ marginBottom: '0.75rem', padding: '0.75rem', borderRadius: '9999px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
             <Plus size={24} />
           </div>
-          <span className="font-bold">Registrar Preço</span>
+          <span style={{ fontWeight: 700 }}>Registrar Preço</span>
         </Link>
-        <Link href="/search" className="card flex flex-col items-center justify-center p-6 hover:border-primary transition-colors group">
-          <div className="mb-2 p-3 rounded-full bg-purple-500/10 text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+        <Link href="/search" className="glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', cursor: 'pointer', textDecoration: 'none' }}>
+          <div style={{ marginBottom: '0.75rem', padding: '0.75rem', borderRadius: '9999px', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }}>
             <Search size={24} />
           </div>
-          <span className="font-bold">Buscar Produtos</span>
+          <span style={{ fontWeight: 700 }}>Buscar Produtos</span>
         </Link>
-        <Link href="/list" className="card flex flex-col items-center justify-center p-6 hover:border-primary transition-colors group">
-          <div className="mb-2 p-3 rounded-full bg-green-500/10 text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
+        <Link href="/list" className="glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', cursor: 'pointer', textDecoration: 'none' }}>
+          <div style={{ marginBottom: '0.75rem', padding: '0.75rem', borderRadius: '9999px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
             <ShoppingCart size={24} />
           </div>
-          <span className="font-bold">Minha Lista</span>
+          <span style={{ fontWeight: 700 }}>Minha Lista</span>
         </Link>
       </div>
 
-      <h2 className="mb-4" style={{ fontSize: "1.5rem" }}>Últimas Atualizações</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Últimas Atualizações</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {recentPrices.map((entry) => (
-          <div key={entry.id} className="card">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-bold text-lg">{entry.product.name}</h3>
-              <span className="badge bg-green-500/10 text-green-500">R$ {entry.price.toFixed(2)}</span>
+          <div key={entry.id} className="card" style={{ background: 'rgba(30, 41, 59, 0.5)', borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>{entry.product.name}</h3>
+              <span style={{ padding: '0.25rem 0.5rem', borderRadius: '9999px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', fontWeight: 700, fontSize: '0.875rem' }}>
+                R$ {entry.price.toFixed(2)}
+              </span>
             </div>
-            <p className="text-sm text-muted mb-2">{entry.supermarket.name}</p>
-            <div className="flex justify-between items-center text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
+            <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '0.5rem' }}>{entry.supermarket.name}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
               <span>Por {entry.user.name}</span>
               <span>{new Date(entry.date).toLocaleDateString()}</span>
             </div>
           </div>
         ))}
         {recentPrices.length === 0 && (
-          <div className="col-span-full text-center py-8 text-muted">
-            Nenhum preço registrado ainda. Seja o primeiro!
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#64748b', background: 'rgba(30, 41, 59, 0.3)', borderRadius: '0.75rem', border: '1px dashed rgba(255, 255, 255, 0.05)' }}>
+            Nenhum preço registrado ainda.
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 }
-=======
-// pages/index.js
-export default function Home() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",      // centraliza verticalmente
-        justifyContent: "center",  // centraliza horizontalmente
-        minHeight: "100vh",        // altura full viewport
-        textAlign: "center",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1>Em construção 🚧</h1>
-    </div>
-  );
-}
->>>>>>> c44de25cf5e5ebea1fa474807441abfe955ea312

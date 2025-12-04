@@ -31,16 +31,28 @@ export default async function handler(req, res) {
       res.status(500).json({ message: "Error creating product" });
     }
   } else if (req.method === "GET") {
-    const { search } = req.query;
+    const { search, category, barcode } = req.query;
     try {
-      const products = await prisma.product.findMany({
-        where: {
-          name: {
-            contains: search || "",
+      const where = {};
+      
+      if (barcode) {
+        where.barcode = barcode;
+      } else {
+        if (search) {
+          where.name = {
+            contains: search,
             mode: "insensitive",
-          },
-        },
-        take: 10,
+          };
+        }
+        if (category && category !== "Todos") {
+          where.category = category;
+        }
+      }
+
+      const products = await prisma.product.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        take: 50,
       });
       res.status(200).json(products);
     } catch (error) {
