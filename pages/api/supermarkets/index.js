@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { name, address } = req.body;
+    const { name, address, latitude, longitude } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
@@ -21,6 +21,8 @@ export default async function handler(req, res) {
         data: {
           name,
           address,
+          latitude,
+          longitude,
         },
       });
       res.status(201).json(supermarket);
