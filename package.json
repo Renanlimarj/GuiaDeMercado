@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "prisma migrate deploy && next dev",
+    "build": "prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint:check": "prettier --check .",
