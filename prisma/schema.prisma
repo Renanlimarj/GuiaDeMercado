@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
@@ -26,6 +27,8 @@ model Supermarket {
   address      String?
   latitude     Float?
   longitude    Float?
+  rating       Float        @default(0)
+  ratingCount  Int          @default(0)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   priceEntries PriceEntry[]

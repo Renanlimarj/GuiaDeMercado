@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import { ArrowLeft, Scan, Loader2 } from "lucide-react";
 import Layout from "../../components/Layout";
 import BarcodeScanner from "../../components/BarcodeScanner";
@@ -48,7 +47,7 @@ export default function NewProduct() {
       });
 
       if (res.ok) {
-        router.back();
+        router.push("/products");
       } else {
         const data = await res.json();
         alert(data.message || "Erro ao criar produto");
@@ -62,39 +61,37 @@ export default function NewProduct() {
   };
 
   const categories = [
-    "Hortifruti", "Padaria", "Açougue", "Bebidas", "Mercearia", 
+    "Hortifruti", "Padaria", "Açougue", "Bebidas", "Mercearia",
     "Limpeza", "Higiene", "Frios", "Laticínios", "Outros"
   ];
 
   return (
     <Layout>
-      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <button onClick={() => router.back()} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <ArrowLeft size={16} /> Voltar
+      <div className="p-4 pt-8 pb-24">
+        <div className="mb-6">
+          <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 transition-colors">
+            <ArrowLeft size={20} /> Voltar
           </button>
-          <h1 style={{ fontSize: "1.875rem", fontWeight: 700 }}>Adicionar Produto</h1>
+          <h1 className="text-2xl font-bold text-white">Adicionar Produto</h1>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          
-          {/* Name */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+
           <div>
-            <label className="block mb-2 text-sm font-bold" style={{ color: '#cbd5e1' }}>Nome do Produto</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-300">Nome do Produto</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="input"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
               placeholder="Ex: Arroz Branco 5kg"
             />
           </div>
 
-          {/* Barcode */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-bold" style={{ color: '#cbd5e1' }}>Código de Barras</label>
+              <label className="text-sm font-semibold text-slate-300">Código de Barras</label>
               <button
                 type="button"
                 onClick={() => setShowScanner(true)}
@@ -107,18 +104,17 @@ export default function NewProduct() {
               type="text"
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
-              className="input"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
               placeholder="Opcional"
             />
           </div>
 
-          {/* Category */}
           <div>
-            <label className="block mb-2 text-sm font-bold" style={{ color: '#cbd5e1' }}>Categoria</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-300">Categoria</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="input"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none"
             >
               <option value="">Selecione uma categoria</option>
               {categories.map(cat => (
@@ -127,14 +123,13 @@ export default function NewProduct() {
             </select>
           </div>
 
-          {/* Image URL */}
           <div>
-            <label className="block mb-2 text-sm font-bold" style={{ color: '#cbd5e1' }}>URL da Imagem</label>
+            <label className="block mb-2 text-sm font-semibold text-slate-300">URL da Imagem</label>
             <input
               type="url"
               value={image}
               onChange={(e) => setImage(e.target.value)}
-              className="input"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
               placeholder="https://exemplo.com/imagem.jpg"
             />
             {image && (
@@ -144,15 +139,14 @@ export default function NewProduct() {
             )}
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary w-full" 
-            style={{ width: "100%", padding: "1rem", fontSize: '1.125rem' }}
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
             disabled={loading}
           >
             {loading ? (
               <>
-                <Loader2 className="animate-spin" size={20} style={{ marginRight: '0.5rem' }} />
+                <Loader2 className="animate-spin" size={20} />
                 Salvando...
               </>
             ) : (
@@ -162,9 +156,9 @@ export default function NewProduct() {
         </form>
 
         {showScanner && (
-          <BarcodeScanner 
-            onScan={handleScan} 
-            onClose={() => setShowScanner(false)} 
+          <BarcodeScanner
+            onScan={handleScan}
+            onClose={() => setShowScanner(false)}
           />
         )}
       </div>

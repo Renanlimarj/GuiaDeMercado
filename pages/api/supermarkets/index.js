@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { name, address, latitude, longitude } = req.body;
+    const { name, address, latitude, longitude, rating } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
@@ -23,10 +23,13 @@ export default async function handler(req, res) {
           address,
           latitude,
           longitude,
+          rating: rating ? parseFloat(rating) : 0,
+          ratingCount: rating ? 1 : 0,
         },
       });
       res.status(201).json(supermarket);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ message: "Error creating supermarket" });
     }
   } else if (req.method === "GET") {
